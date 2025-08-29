@@ -1,79 +1,76 @@
 package org.example.service.impl;
 
+import org.example.dao.impl.ClienteDAOImpl;
 import org.example.dao.impl.UsuarioDAOImpl;
-
 import org.example.dao.interfaces.IDAO;
+import org.example.model.Cliente;
 import org.example.model.Usuario;
+import org.example.service.interfaces.IClienteService;
 import org.example.service.interfaces.IService;
-import org.example.service.interfaces.IUsuarioService;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-/**
- * Implementación del servicio de Usuario
- * Implementa principios Single Responsibility y Dependency Inversion
- */
-public class UsuarioServiceImpl implements IUsuarioService {
-    private final IDAO<Usuario> usuarioDAO;
+public class ClienteServiceImpl implements IClienteService {
+    private final IDAO<Cliente> clienteDAO;
     private final Pattern emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
-    
-    public UsuarioServiceImpl(IDAO<Usuario> usuarioDAO) {
-        this.usuarioDAO = usuarioDAO;
+
+    public ClienteServiceImpl(IDAO<Cliente> clienteDAO) {
+        this.clienteDAO = clienteDAO;
     }
-    
+
     @Override
-    public void crear(Usuario usuario) {
-        if (usuario.getNombre() == null || usuario.getNombre().trim().isEmpty()) {
+    public void crear(Cliente cliente) {
+        if (cliente.getNombre() == null || cliente.getNombre().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
-        
-        if (!validarEmail(usuario.getEmail())) {
+
+        if (!validarEmail(cliente.getEmail())) {
             throw new IllegalArgumentException("Email inválido");
         }
-        
-        usuarioDAO.crear(usuario);
+
+        clienteDAO.crear(cliente);
     }
-    
+
     @Override
-    public Optional<Usuario> obtenerPorId(Long id) {
+    public Optional<Cliente> obtenerPorId(Long id) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("ID inválido");
         }
-        
-        return usuarioDAO.obtenerPorId(id);
+
+        return clienteDAO.obtenerPorId(id);
     }
-    
+
     @Override
-    public List<Usuario> obtenerTodos() {
-        return usuarioDAO.obtenerTodos();
+    public List<Cliente> obtenerTodos() {
+        return clienteDAO.obtenerTodos();
     }
-    
+
     @Override
-    public void actualizar(Usuario usuario) {
-        if (usuario.getId() == null || usuario.getId() <= 0) {
+    public void actualizar(Cliente cliente) {
+        if (cliente.getId() == null || cliente.getId() <= 0) {
             throw new IllegalArgumentException("ID inválido para actualización");
         }
-        
-        if (usuario.getNombre() == null || usuario.getNombre().trim().isEmpty()) {
+
+        if (cliente.getNombre() == null || cliente.getNombre().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
-        
-        if (!validarEmail(usuario.getEmail())) {
+
+        if (!validarEmail(cliente.getEmail())) {
             throw new IllegalArgumentException("Email inválido");
         }
-        
-        usuarioDAO.actualizar(usuario);
+
+        clienteDAO.actualizar(cliente);
     }
-    
+
     @Override
     public void eliminar(Long id) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("ID inválido");
         }
-        
-        usuarioDAO.eliminar(id);
+
+        clienteDAO.eliminar(id);
     }
 
     public boolean validarEmail(String email) {

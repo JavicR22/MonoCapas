@@ -1,29 +1,25 @@
 package org.example.presentation.desktop;
 
-import org.example.container.DIContainer;
+import org.example.controller.UsuarioController;
 import org.example.model.Usuario;
-import org.example.service.interfaces.IUsuarioService;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Interfaz de usuario de escritorio usando Swing
  * Implementa principio Single Responsibility
  */
 public class DesktopUI extends JFrame {
-    private final IUsuarioService usuarioService;
+    private UsuarioController usuarioController;
     private JTable tablaUsuarios;
     private DefaultTableModel modeloTabla;
     private JTextField txtNombre, txtEmail, txtTelefono;
     private JLabel lblBaseDatos;
     
     public DesktopUI() {
-        this.usuarioService = DIContainer.getInstance().getService(IUsuarioService.class);
         inicializarComponentes();
         configurarVentana();
         cargarUsuarios();
@@ -34,9 +30,9 @@ public class DesktopUI extends JFrame {
         
         // Panel superior con información de BD
         JPanel panelSuperior = new JPanel(new FlowLayout());
-        lblBaseDatos = new JLabel("Base de datos: " + DIContainer.getInstance().getDatabaseType().toUpperCase());
+
         JButton btnCambiarDB = new JButton("Cambiar BD");
-        btnCambiarDB.addActionListener(e -> cambiarBaseDatos());
+
         
         panelSuperior.add(lblBaseDatos);
         panelSuperior.add(btnCambiarDB);
@@ -133,7 +129,7 @@ public class DesktopUI extends JFrame {
     private void cargarUsuarios() {
         try {
             modeloTabla.setRowCount(0);
-            List<Usuario> usuarios = usuarioService.obtenerTodosLosUsuarios();
+            List<Usuario> usuarios = usuarioController.listarUsuarios();
             
             for (Usuario usuario : usuarios) {
                 Object[] fila = {
@@ -160,13 +156,12 @@ public class DesktopUI extends JFrame {
     
     private void crearUsuario() {
         try {
-            Usuario usuario = new Usuario.Builder()
-                .setNombre(txtNombre.getText().trim())
-                .setEmail(txtEmail.getText().trim())
-                .setTelefono(txtTelefono.getText().trim())
-                .build();
-            
-            usuarioService.crearUsuario(usuario);
+
+            String nombre = txtNombre.getText().trim();
+            String email = txtEmail.getText().trim();
+            String telefono = txtTelefono.getText().trim();
+
+            usuarioController.crearUsuario(nombre, email, telefono);
             mostrarMensaje("Usuario creado exitosamente");
             limpiarFormulario();
             cargarUsuarios();
@@ -184,14 +179,12 @@ public class DesktopUI extends JFrame {
         
         try {
             Long id = (Long) modeloTabla.getValueAt(filaSeleccionada, 0);
-            Usuario usuario = new Usuario.Builder()
-                .setId(id)
-                .setNombre(txtNombre.getText().trim())
-                .setEmail(txtEmail.getText().trim())
-                .setTelefono(txtTelefono.getText().trim())
-                .build();
-            
-            usuarioService.actualizarUsuario(usuario);
+            String nombre = txtNombre.getText().trim();
+            String email = txtEmail.getText().trim();
+            String telefono = txtTelefono.getText().trim();
+
+
+            usuarioController.actualizarUsuario(id, nombre,email, telefono);
             mostrarMensaje("Usuario actualizado exitosamente");
             limpiarFormulario();
             cargarUsuarios();
@@ -217,7 +210,7 @@ public class DesktopUI extends JFrame {
         if (confirmacion == JOptionPane.YES_OPTION) {
             try {
                 Long id = (Long) modeloTabla.getValueAt(filaSeleccionada, 0);
-                usuarioService.eliminarUsuario(id);
+                usuarioController.eliminarUsuario(id);
                 mostrarMensaje("Usuario eliminado exitosamente");
                 limpiarFormulario();
                 cargarUsuarios();
@@ -227,29 +220,8 @@ public class DesktopUI extends JFrame {
         }
     }
     
-    private void cambiarBaseDatos() {
-        String[] opciones = {"H2", "MySQL"};
-        String seleccion = (String) JOptionPane.showInputDialog(
-            this,
-            "Seleccione la base de datos:",
-            "Cambiar Base de Datos",
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            opciones,
-            opciones[0]
-        );
-        
-        if (seleccion != null) {
-            try {
-                DIContainer.getInstance().setDatabaseType(seleccion.toLowerCase());
-                lblBaseDatos.setText("Base de datos: " + seleccion);
-                mostrarMensaje("Base de datos cambiada a: " + seleccion);
-                cargarUsuarios();
-            } catch (Exception e) {
-                mostrarError("Error al cambiar base de datos: " + e.getMessage());
-            }
-        }
-    }
+
+
     
     private void limpiarFormulario() {
         txtNombre.setText("");

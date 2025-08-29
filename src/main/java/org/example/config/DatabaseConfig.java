@@ -1,35 +1,91 @@
 package org.example.config;
 
+import org.example.adapters.DataBaseAdapter;
+import org.example.adapters.H2Adapter;
+import org.example.adapters.MySQLAdapter;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 /**
  * Configuración de base de datos usando patrón Singleton
  * Implementa principio Single Responsibility
  */
 public class DatabaseConfig {
-    private static DatabaseConfig instance;
-    
-    // Configuración MySQL
-    private final String mysqlUrl = "jdbc:mysql://localhost:3306/monocapas";
-    private final String mysqlUser = "root";
-    private final String mysqlPassword = "20021130";
-    
-    // Configuración H2
-    private final String h2Url = "jdbc:h2:~/tabla";
-    private final String h2User = "sa";
-    private final String h2Password = "";
-    
-    private DatabaseConfig() {}
-    
-    public static synchronized DatabaseConfig getInstance() {
-        if (instance == null) {
-            instance = new DatabaseConfig();
-        }
-        return instance;
+
+    private static Properties properties;
+    private static MySQLAdapter mysqlAdapter;
+    private static H2Adapter h2Adapter;
+
+    static {
+        loadProperties();
     }
-    
-    public String getMysqlUrl() { return mysqlUrl; }
-    public String getMysqlUser() { return mysqlUser; }
-    public String getMysqlPassword() { return mysqlPassword; }
-    public String getH2Url() { return h2Url; }
-    public String getH2User() { return h2User; }
-    public String getH2Password() { return h2Password; }
+
+    private static void loadProperties() {
+        properties = new Properties();
+        try (InputStream input = DatabaseConfig.class.getClassLoader()
+                .getResourceAsStream("database.properties")) {
+
+            if (input == null) {
+                System.out.println("database.properties no encontrado, usando valores por defecto");
+                // Valores por defecto
+                properties.setProperty("mysql.url", "jdbc:mysql://localhost:3306/tienda_db?useSSL=false&serverTimezone=UTC&autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
+                properties.setProperty("mysql.user", "root");
+                properties.setProperty("mysql.password", "");
+                properties.setProperty("h2.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+                properties.setProperty("h2.user", "sa");
+                properties.setProperty("h2.password", "");
+            } else {
+                properties.load(input);
+                System.out.println("Propiedades de base de datos cargadas desde archivo");
+            }
+
+        } catch (IOException e) {
+            System.err.println("Error al cargar propiedades: " + e.getMessage());
+            throw new RuntimeException("Error al cargar propiedades de base de datos", e);
+        }
+    }
+
+    public static synchronized DataBaseAdapter getMySQLAdapter() {
+        if (mysqlAdapter == null) {
+            String mysqlUrl = properties.getProperty("mysql.url");
+            String mysqlUsername = properties.getProperty("mysql.user");
+            String mysqlPassword = properties.getProperty("mysql.password");
+
+            System.out.println("Conectando a MySQL: " + mysqlUrl);
+            mysqlAdapter = new MySQLAdapter(mysqlUrl, mysqlUsername, mysqlPassword);
+        }
+        return mysqlAdapter;
+    }
+
+    public static synchronized DataBaseAdapter getH2Adapter() {
+        if (h2Adapter == null) {
+            String h2Url = properties.getProperty("h2.url");
+            String h2Username = properties.getProperty("h2.user");
+            String h2Password = properties.getProperty("h2.password");
+
+            System.out.println("Conectando a H2: " + h2Url);
+            h2Adapter = new H2Adapter(h2Url, h2Username, h2Password);
+        }
+        return h2Adapter;
+    }
+    // Método para cerrar todos los pools al finalizar la aplicación
+    public static synchronized void closeAllConnections() {
+        if (mysqlAdapter != null) {
+            mysqlAdapter.close();
+            mysqlAdapter = null;
+        }
+        if (h2Adapter != null) {
+            h2Adapter.close();
+            h2Adapter = null;
+        }
+        System.out.println("Todas las conexiones cerradas");
+    }
+
+    public static void printAllPoolStats() {
+        if (mysqlAdapter != null) {
+            mysqlAdapter.printPoolStats();
+        }
+    }
 }

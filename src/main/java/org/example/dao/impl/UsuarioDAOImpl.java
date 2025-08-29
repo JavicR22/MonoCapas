@@ -1,48 +1,33 @@
 package org.example.dao.impl;
 
-import org.example.dao.interfaces.IConnectionFactory;
-import org.example.dao.interfaces.IUsuarioDAO;
+import org.example.adapters.DataBaseAdapter;
+import org.example.builders.UsuarioBuilder;
+import org.example.dao.interfaces.IDAO;
 import org.example.model.Usuario;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Implementación de DAO para Usuario
  * Implementa principios Single Responsibility y Dependency Inversion
  */
-public class UsuarioDAOImpl implements IUsuarioDAO {
-    private final IConnectionFactory connectionFactory;
-    
-    public UsuarioDAOImpl(IConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
-        inicializarTabla();
+public class UsuarioDAOImpl implements IDAO<Usuario> {
+    private final DataBaseAdapter dataBaseAdapter;
+
+
+
+
+    public UsuarioDAOImpl (DataBaseAdapter dataBaseAdapter) {
+        this.dataBaseAdapter = dataBaseAdapter;
     }
     
-    private void inicializarTabla() {
-        String sql = """
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                nombre VARCHAR(100) NOT NULL,
-                email VARCHAR(100) NOT NULL UNIQUE,
-                telefono VARCHAR(20)
-            )
-            """;
-        
-        try (Connection conn = connectionFactory.createConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al inicializar tabla usuarios", e);
-        }
-    }
+
     
     @Override
     public void crear(Usuario usuario) {
         String sql = "INSERT INTO usuarios (nombre, email, telefono) VALUES (?, ?, ?)";
         
-        try (Connection conn = connectionFactory.createConnection();
+        try (Connection conn = dataBaseAdapter.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, usuario.getNombre());
@@ -59,14 +44,14 @@ public class UsuarioDAOImpl implements IUsuarioDAO {
     public Optional<Usuario> obtenerPorId(Long id) {
         String sql = "SELECT * FROM usuarios WHERE id = ?";
         
-        try (Connection conn = connectionFactory.createConnection();
+        try (Connection conn = dataBaseAdapter.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setLong(1, id);
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
-                Usuario usuario = new Usuario.Builder()
+                Usuario usuario = new UsuarioBuilder()
                     .setId(rs.getLong("id"))
                     .setNombre(rs.getString("nombre"))
                     .setEmail(rs.getString("email"))
@@ -87,12 +72,12 @@ public class UsuarioDAOImpl implements IUsuarioDAO {
         List<Usuario> usuarios = new ArrayList<>();
         String sql = "SELECT * FROM usuarios";
         
-        try (Connection conn = connectionFactory.createConnection();
+        try (Connection conn = dataBaseAdapter.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
-                Usuario usuario = new Usuario.Builder()
+                Usuario usuario = new UsuarioBuilder()
                     .setId(rs.getLong("id"))
                     .setNombre(rs.getString("nombre"))
                     .setEmail(rs.getString("email"))
@@ -112,7 +97,7 @@ public class UsuarioDAOImpl implements IUsuarioDAO {
     public void actualizar(Usuario usuario) {
         String sql = "UPDATE usuarios SET nombre = ?, email = ?, telefono = ? WHERE id = ?";
         
-        try (Connection conn = connectionFactory.createConnection();
+        try (Connection conn = dataBaseAdapter.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, usuario.getNombre());
@@ -130,7 +115,7 @@ public class UsuarioDAOImpl implements IUsuarioDAO {
     public void eliminar(Long id) {
         String sql = "DELETE FROM usuarios WHERE id = ?";
         
-        try (Connection conn = connectionFactory.createConnection();
+        try (Connection conn = dataBaseAdapter.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setLong(1, id);
